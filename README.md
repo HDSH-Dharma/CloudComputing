@@ -22,7 +22,7 @@ Owns the repo and the foundation everyone builds on. Lives in `supabase/`, `pack
 - [ ] Phase 4: hardening, RLS audit, deployment fixes; help with chart queries if Flabianos is overloaded
 
 ### Maverick: Printer & monitoring pipeline
-Owns the sensor-fusion core, since it depends on his physical printer. Lives in `apps/worker/` (to be added).
+Owns the sensor-fusion core, since it depends on his physical printer. Lives in `apps/worker/`.
 
 - [ ] Printer API integration (OctoPrint, Moonraker, or Bambu; start with one)
 - [ ] Secure tunnel from the local printer network to the cloud (Cloudflare Tunnel or Tailscale)
@@ -34,7 +34,7 @@ Owns the sensor-fusion core, since it depends on his physical printer. Lives in 
 - [ ] Hardware setup for the final demo
 
 ### Flabianos: Frontend & UX
-Owns everything the user sees. Lives in `apps/web/` (to be added).
+Owns everything the user sees. Lives in `apps/web/`.
 
 - [ ] Next.js app shell, Tailwind, auth pages, supabase-js integration
 - [ ] Pages: G-code upload, spool inventory, post-print weight entry, printer setup

@@ -63,6 +63,9 @@ jobs:
             git reset --hard origin/main
             corepack enable --install-directory "$HOME/.local/bin"
             pnpm install --frozen-lockfile
+            # NEXT_PUBLIC_* values are inlined at build time, so load them before building.
+            ENV_FILE="${FILAMENTIQ_ENV_FILE:-$HOME/filamentiq.env}"
+            if [ -f "$ENV_FILE" ]; then set -a; . "$ENV_FILE"; set +a; fi
             pnpm build
             if [ -d apps/web ]; then
               pm2 startOrReload ecosystem.config.cjs --env production

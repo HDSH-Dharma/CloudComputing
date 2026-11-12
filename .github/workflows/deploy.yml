@@ -24,7 +24,7 @@ jobs:
         with:
           version: latest
       - run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
-      - run: supabase db push --remote
+      - run: supabase db push --remote --yes
       - name: Sync Edge Function secrets
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -35,8 +35,8 @@ jobs:
           args=(CORS_ORIGINS="${CORS_ORIGINS:-*}" GEMINI_MODEL="${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}")
           [ -n "$GEMINI_API_KEY" ] && args+=(GEMINI_API_KEY="$GEMINI_API_KEY")
           [ -n "$TELEGRAM_BOT_TOKEN" ] && args+=(TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN")
-          supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" "${args[@]}"
-      - run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"
+          supabase secrets set --yes --project-ref "$SUPABASE_PROJECT_REF" "${args[@]}"
+      - run: supabase functions deploy --use-api --yes --project-ref "$SUPABASE_PROJECT_REF"
 
   vps:
     name: Deploy Next.js to VPS (PM2)

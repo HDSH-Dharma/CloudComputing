@@ -1,0 +1,13 @@
+# Default owner (repo admin)
+*                         @HDSH-Dharma
+
+# Foundation: database, infra, CI, shared contracts
+/supabase/                @HDSH-Dharma
+/.github/                 @HDSH-Dharma
+/packages/                @HDSH-Dharma
+/docs/                    @HDSH-Dharma
+/ecosystem.config.cjs     @HDSH-Dharma
+
+# Add teammates' GitHub handles once known, e.g.:
+# /apps/web/              @flabianos-handle
+# /apps/worker/           @maverick-handle

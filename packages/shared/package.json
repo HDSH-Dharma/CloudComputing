@@ -1,0 +1,15 @@
+{
+  "name": "@filamentiq/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared Zod contracts, G-code parser and ledger math. Source lives in supabase/functions/_shared so Edge Functions can bundle it.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./gcode": "./src/gcode.ts",
+    "./ledger": "./src/ledger.ts"
+  },
+  "dependencies": {
+    "zod": "3.24.1"
+  }
+}

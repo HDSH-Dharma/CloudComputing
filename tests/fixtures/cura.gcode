@@ -1,0 +1,22 @@
+;FLAVOR:Marlin
+;TIME:6123
+;Filament used: 4.25891m
+;Layer height: 0.16
+;MINX:80.112
+;LAYER_COUNT:3
+;Generated with Cura_SteamEngine 5.7.1
+M140 S65
+M105
+M190 S65
+M104 S210
+M109 S210
+M82 ;absolute extrusion mode
+G28
+G92 E0
+;LAYER:0
+G0 F3000 X10 Y10 Z0.3
+G1 F1500 X50 Y10 E1.5
+;LAYER:1
+G0 Z0.46
+G1 X50 Y50 E3.0
+;TIME_ELAPSED:6123.0

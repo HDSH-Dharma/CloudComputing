@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true
+  },
+  "include": ["supabase/functions/_shared/**/*.ts", "packages/*/src/**/*.ts", "tests/**/*.ts"]
+}

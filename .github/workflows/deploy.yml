@@ -1,0 +1,67 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  supabase:
+    name: Supabase migrations + Edge Functions
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+      - run: supabase db push --remote
+      - name: Sync Edge Function secrets
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CORS_ORIGINS: ${{ vars.CORS_ORIGINS }}
+        run: |
+          supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" \
+            GEMINI_API_KEY="$GEMINI_API_KEY" \
+            TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN" \
+            CORS_ORIGINS="${CORS_ORIGINS:-*}" \
+            GEMINI_MODEL="${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}"
+      - run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"
+
+  vps:
+    name: Deploy Next.js to VPS (PM2)
+    needs: supabase
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.VPS_APP_DIR }}"
+            git fetch --prune origin main
+            git reset --hard origin/main
+            corepack enable
+            pnpm install --frozen-lockfile
+            pnpm build
+            if [ -d apps/web ]; then
+              pm2 startOrReload ecosystem.config.cjs --env production
+              pm2 save
+            else
+              echo "apps/web not created yet — skipping PM2 reload"
+            fi

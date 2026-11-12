@@ -50,7 +50,6 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          script_stop: true
           script: |
             set -euo pipefail
             # Non-interactive SSH does not read ~/.bashrc, so load nvm-managed Node explicitly.

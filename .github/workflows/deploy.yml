@@ -31,11 +31,11 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CORS_ORIGINS: ${{ vars.CORS_ORIGINS }}
         run: |
-          supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" \
-            GEMINI_API_KEY="$GEMINI_API_KEY" \
-            TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN" \
-            CORS_ORIGINS="${CORS_ORIGINS:-*}" \
-            GEMINI_MODEL="${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}"
+          # Only send secrets that are set, so a missing one never overwrites a value with "".
+          args=(CORS_ORIGINS="${CORS_ORIGINS:-*}" GEMINI_MODEL="${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}")
+          [ -n "$GEMINI_API_KEY" ] && args+=(GEMINI_API_KEY="$GEMINI_API_KEY")
+          [ -n "$TELEGRAM_BOT_TOKEN" ] && args+=(TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN")
+          supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" "${args[@]}"
       - run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"
 
   vps:
@@ -56,11 +56,13 @@ jobs:
             # Non-interactive SSH does not read ~/.bashrc, so load nvm-managed Node explicitly.
             export NVM_DIR="$HOME/.nvm"
             if [ -s "$NVM_DIR/nvm.sh" ]; then . "$NVM_DIR/nvm.sh"; fi
-            export PATH="$HOME/.local/bin:$PATH"
+            export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"
+            # Never block on Corepack's "download pnpm? [Y/n]" prompt.
+            export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
             cd "${{ secrets.VPS_APP_DIR }}"
             git fetch --prune origin main
             git reset --hard origin/main
-            corepack enable
+            corepack enable --install-directory "$HOME/.local/bin"
             pnpm install --frozen-lockfile
             pnpm build
             if [ -d apps/web ]; then

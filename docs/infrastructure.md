@@ -11,18 +11,28 @@ Steps that need account access and cannot be done from the repo. Do them once, i
 6. Generate DB types when the schema changes: `pnpm db:types` (local) or `supabase gen types typescript --linked`.
 
 ## 2. Domainesia VPS (CloudPanel)
-1. CloudPanel → Add Site → **Node.js** site, domain `<your-domain>`, Node 22, app port `3000`. This creates a site user and the Nginx reverse proxy.
+1. CloudPanel → Add Site → **Node.js** site, domain `<your-domain>`, Node 22, app port `3010` (3000 is taken on our VPS; must match `ecosystem.config.cjs`). This creates a site user and the Nginx reverse proxy.
 2. SSL/TLS → Let's Encrypt certificate (after the domain's A record points to the VPS IP in Domainesia DNS).
-3. SSH as the site user:
+3. **Dedicated SSH user for deploys** (do not use the site user for CI):
+   CloudPanel → Sites → `<your-domain>` → **SSH/FTP** → **Add SSH User**, e.g. `cc-deploy`, with a generated password.
+   Create the deploy key on your laptop and add the **public** key to that user (CloudPanel SSH Keys, or its `~/.ssh/authorized_keys`):
    ```bash
-   git clone https://github.com/HDSH-Dharma/CloudComputing.git ~/htdocs/<your-domain>/app
+   ssh-keygen -t ed25519 -f ~/.ssh/filamentiq_deploy -N "" -C "github-actions-deploy"
+   ssh -i ~/.ssh/filamentiq_deploy cc-deploy@<vps-ip>
+   ```
+   The **private** key (`~/.ssh/filamentiq_deploy`) goes only into the GitHub secret `VPS_SSH_KEY`.
+4. As the deploy user, check Node is on PATH, then set up the app (PM2 runs under this user):
+   ```bash
+   node -v && npm -v          # if missing: install nvm + `nvm install 22` for this user
+   git clone https://github.com/HDSH-Dharma/CloudComputing.git <app-dir>
    npm i -g pm2 && corepack enable
    nano ~/filamentiq.env      # NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (see .env.example)
    chmod 600 ~/filamentiq.env
-   cd ~/htdocs/<your-domain>/app && pnpm install --frozen-lockfile && pnpm build
+   cd <app-dir> && pnpm install --frozen-lockfile && pnpm build
+   # only once apps/web exists:
    pm2 startOrReload ecosystem.config.cjs --env production && pm2 save && pm2 startup
    ```
-4. Create a deploy SSH key pair; put the public key in the site user's `~/.ssh/authorized_keys`, the private key in GitHub secrets.
+   `<app-dir>` must be writable by the deploy user (e.g. inside its home, or the site's `htdocs/<your-domain>/app`); put the same path in `VPS_APP_DIR`.
 
 ## 3. GitHub
 **Environment `production`** (Settings → Environments) with these secrets:
@@ -33,7 +43,11 @@ Steps that need account access and cannot be done from the repo. Do them once, i
 | `SUPABASE_DB_PASSWORD` | project DB password |
 | `SUPABASE_PROJECT_REF` | project ref |
 | `GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN` | API keys (synced to Edge Function secrets on deploy) |
-| `VPS_HOST`, `VPS_USER`, `VPS_PORT`, `VPS_SSH_KEY`, `VPS_APP_DIR` | SSH deploy target |
+| `VPS_HOST` | VPS IP address (works before DNS is ready) |
+| `VPS_USER` | the dedicated SSH user, e.g. `cc-deploy` (not the site user) |
+| `VPS_PORT` | SSH port, usually `22` |
+| `VPS_SSH_KEY` | private key `~/.ssh/filamentiq_deploy` |
+| `VPS_APP_DIR` | absolute path of `<app-dir>` |
 
 Variables: `CORS_ORIGINS` (e.g. `https://<your-domain>,http://localhost:3000`), optional `GEMINI_MODEL`.
 

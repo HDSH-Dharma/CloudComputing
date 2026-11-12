@@ -6,11 +6,11 @@ const ENV_FILE = process.env.FILAMENTIQ_ENV_FILE || `${process.env.HOME}/filamen
 module.exports = {
   apps: [
     {
-      // Next.js app (apps/web, owned by Flabianos). CloudPanel reverse-proxies the domain to this port.
+      // Next.js app (apps/web, owned by Flabianos). Port MUST match the "App Port" of the CloudPanel site.
       name: "filamentiq-web",
       cwd: "./apps/web",
       script: "node_modules/next/dist/bin/next",
-      args: "start -p 3000",
+      args: "start -p 3010",
       node_args: `--env-file=${ENV_FILE}`,
       max_memory_restart: "500M",
       env_production: { NODE_ENV: "production" },

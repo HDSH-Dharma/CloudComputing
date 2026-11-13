@@ -1,9 +1,16 @@
+# Security updates only.
+# open-pull-requests-limit: 0 turns off routine version-bump PRs, but Dependabot
+# still opens PRs for vulnerable dependencies when "Dependabot security updates"
+# is enabled (Settings → Code security). Dependencies are pinned on purpose:
+# Edge Functions pin the same versions in supabase/functions/**/deno.json, so a
+# bump must update both places together.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule: { interval: weekly }
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
+    open-pull-requests-limit: 0

@@ -1,19 +1,35 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { TABLES, VIEWS } from "@filamentiq/shared";
+import { formatGrams, formatMoney } from "@/lib/format";
+import type { SpoolInventoryRow } from "@/lib/types";
 
-export const metadata: Metadata = { title: "Dashboard" };
-
-export default function DashboardPage() {
-  return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-stone-600 dark:text-stone-400">
-          Ringkasan print, stok filamen, dan biaya akan tampil di sini.
-        </p>
-      </header>
-      <div className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500 dark:border-stone-700">
-        Belum ada data. Mulai dengan menambah spool dan printer pada tahap berikutnya.
-      </div>
-    </div>
-  );
+export const metadata: Metadata = { title: "Overview" };
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const [{ data: userData }, { data: spools }, { data: jobs }, { data: printers }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.from(VIEWS.spoolInventory).select("*").is("archived_at", null).order("created_at", { ascending: false }).returns<SpoolInventoryRow[]>(),
+    supabase.from(TABLES.printJobs).select("id,status,name").order("created_at", { ascending: false }).limit(6),
+    supabase.from(TABLES.printers).select("id,name,model,is_active").order("created_at", { ascending: false }).limit(1),
+  ]);
+  const name = userData.user?.user_metadata?.display_name || userData.user?.email?.split("@")[0] || "there";
+  const inventory = spools ?? [];
+  const recentJobs = jobs ?? [];
+  const printer = printers?.[0];
+  const grams = inventory.reduce((sum, spool) => sum + Number(spool.remaining_weight_g || 0), 0);
+  const spend = inventory.reduce((sum, spool) => sum + Number(spool.remaining_value || 0), 0);
+  const today = new Intl.DateTimeFormat("en", { weekday: "long", month: "long", day: "numeric", year: "numeric" }).format(new Date());
+  const card = "rounded-2xl border border-[#343b43] bg-[#232a32] p-5 shadow-[0_14px_40px_-28px_#000]";
+  const metrics = [["Print jobs", String(recentJobs.length), "Recent jobs in your ledger"], ["Material available", `${(grams / 1000).toFixed(1)} kg`, "Across active spools"], ["Inventory value", formatMoney(spend, inventory[0]?.currency ?? "IDR"), `${inventory.length} active spools`], ["Low stock", String(inventory.filter(s => Number(s.remaining_pct ?? 0) < 15).length), "Spools below 15%"]];
+  return <div className="mx-auto max-w-[1600px] space-y-8 pb-8">
+    <header className="flex flex-wrap items-end justify-between gap-4"><div><p className="font-mono text-xs font-semibold uppercase tracking-[.2em] text-slate-400">Manufacturing intelligence</p><h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Good morning, {name}.</h1><p className="mt-2 text-sm text-slate-400">Your print floor at a glance. <span className="mx-2 text-slate-600">|</span>{today}</p></div><Link href="/spools" className="rounded-xl border border-brand-500/30 bg-brand-500/10 px-4 py-2.5 text-sm font-semibold text-brand-100 transition hover:bg-brand-500/20">+ Add spool</Link></header>
+    <section className="grid gap-4 xl:grid-cols-[1.5fr_1fr]"><article className={`${card} relative min-h-64 overflow-hidden`}><div className="absolute -right-12 -top-16 size-72 rounded-full border-[28px] border-white/[.025]"/><div className="relative flex h-full flex-col justify-between gap-8 sm:flex-row"><div><p className="font-mono text-xs font-semibold uppercase tracking-[.18em] text-brand-500">Active printer</p><h2 className="mt-4 text-3xl font-semibold">{printer?.name ?? "No printer connected"}</h2><p className="mt-2 text-sm text-slate-400">{printer?.model ?? "Add a printer profile to get started"}<span className="ml-3 rounded-full bg-emerald-400/10 px-3 py-1 font-mono text-xs text-emerald-300">{printer?.is_active ? "Ready" : "Offline"}</span></p></div><div className="grid size-36 shrink-0 place-items-center self-center rounded-full border-[12px] border-[#343b43] text-center text-xs text-slate-400"><span>Printer<br/>status</span></div></div><div className="relative mt-8 grid grid-cols-3 gap-3 border-t border-white/[.07] pt-5 text-sm"><div><p className="font-mono text-xs text-slate-500">Current job</p><p className="mt-2">No active job</p></div><div><p className="font-mono text-xs text-slate-500">ETA</p><p className="mt-2">--</p></div><div><p className="font-mono text-xs text-slate-500">Status</p><p className="mt-2">Standing by</p></div></div></article><article className={`${card} flex min-h-64 flex-col items-center justify-center bg-gradient-to-br from-[#293b3a] to-[#232a32] text-center`}><div className="grid size-16 place-items-center rounded-full border border-emerald-200/30 text-2xl text-emerald-200/70">Camera</div><p className="mt-4 font-mono text-xs uppercase tracking-widest text-slate-300">Printer camera</p><p className="mt-2 text-sm text-slate-400">{printer ? "Camera feed is ready to configure" : "No printer camera connected"}</p><span className="mt-6 rounded-full bg-amber-100 px-3 py-1 font-mono text-xs text-amber-900">{printer ? "Standby" : "Demo mode"}</span></article></section>
+    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{metrics.map(([label, value, note]) => <article key={label} className={card}><p className="font-mono text-xs text-slate-400">{label}</p><p className="mt-4 text-3xl font-semibold tracking-tight">{value}</p><p className="mt-2 text-xs text-slate-500">{note}</p></article>)}</section>
+    <section className="grid gap-5 xl:grid-cols-[1.35fr_1fr]"><article className={card}><div className="flex items-start justify-between"><div><p className="font-mono text-xs uppercase tracking-[.18em] text-slate-400">Recent activity</p><h2 className="mt-2 text-xl font-semibold">Print jobs</h2></div><Link href="/jobs" className="text-sm font-medium text-brand-500 hover:text-brand-100">View all</Link></div>{recentJobs.length ? <ul className="mt-6 divide-y divide-white/[.07]">{recentJobs.map((job: { id: string; name: string; status: string }) => <li key={job.id} className="flex items-center justify-between gap-4 py-4"><span className="truncate text-sm font-medium">{job.name}</span><span className="rounded-full bg-slate-700/60 px-2.5 py-1 font-mono text-xs text-slate-300">{job.status}</span></li>)}</ul> : <div className="mt-8 rounded-xl border border-dashed border-slate-600/70 p-7 text-sm text-slate-400">No print jobs yet. Upload a G-code file to populate your job ledger.</div>}</article>
+    <article className={card}><div className="flex items-start justify-between"><div><p className="font-mono text-xs uppercase tracking-[.18em] text-slate-400">Material ledger</p><h2 className="mt-2 text-xl font-semibold">Filament inventory</h2></div><Link href="/spools" aria-label="Add filament spool" className="grid size-9 place-items-center rounded-lg border border-white/10 text-lg hover:bg-white/5">+</Link></div>{inventory.length ? <ul className="mt-5 space-y-3">{inventory.slice(0,3).map(s => <li key={s.id} className="flex items-center gap-3 rounded-xl border border-white/[.07] p-3"><span className="size-9 shrink-0 rounded-lg border border-white/10" style={{background:s.color_hex ?? "#ed7549"}}/><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{s.name || [s.brand,s.color_name].filter(Boolean).join(" ") || s.material}</p><p className="text-xs text-slate-500">{s.material} - {formatGrams(s.remaining_weight_g)} remaining</p></div><span className="font-mono text-xs text-slate-400">{s.remaining_pct}%</span></li>)}</ul> : <div className="mt-5 rounded-xl bg-indigo-400/[.08] p-4"><p className="text-sm font-medium text-indigo-200">Your material ledger is ready</p><p className="mt-1 text-xs leading-5 text-slate-400">Add your first spool to track remaining filament, value, and print usage.</p><Link href="/spools" className="mt-3 inline-block text-sm font-medium text-indigo-300">Add a spool</Link></div>}</article></section>
+    <Link href="/assistant" className="group flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-indigo-300/15 bg-gradient-to-r from-indigo-400/[.11] to-[#232a32] p-5 transition hover:border-indigo-300/30 sm:p-6"><div className="flex items-center gap-4"><span className="grid size-12 place-items-center rounded-xl bg-indigo-300/10 font-mono text-indigo-200">AI</span><div><p className="font-semibold">Ask your material assistant</p><p className="mt-1 text-sm text-slate-400">Explore spool efficiency, print costs, and your material history.</p></div></div><span className="text-sm font-medium text-indigo-200 group-hover:translate-x-1">Open assistant</span></Link>
+    <footer className="flex flex-wrap justify-between gap-2 border-t border-white/[.08] pt-4 font-mono text-[11px] text-slate-500"><span>FILAMENTIQ / WORKSPACE</span><span>Inventory and print records sync to your account</span></footer>
+  </div>;
 }

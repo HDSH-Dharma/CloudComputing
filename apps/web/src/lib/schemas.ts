@@ -28,3 +28,13 @@ export const PrinterInputSchema = z.object({
 export type PrinterInput = z.infer<typeof PrinterInputSchema>;
 
 export const ApiKeySchema = z.string().trim().min(1, "API key wajib diisi").max(500);
+
+// --- New print job (insert into `print_jobs`; estimates are copied from the G-code file by a DB trigger) ---
+export const NewPrintJobSchema = z.object({
+  name: z.string().trim().min(1, "Nama job wajib diisi").max(120),
+  project: z.string().trim().max(80).optional(),
+  spool_id: z.string().uuid("Pilih spool"),
+  printer_id: z.string().uuid().optional(),
+  gcode_file_id: z.string().uuid().optional(),
+});
+export type NewPrintJob = z.infer<typeof NewPrintJobSchema>;

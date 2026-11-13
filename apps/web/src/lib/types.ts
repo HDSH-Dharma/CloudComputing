@@ -60,3 +60,26 @@ export type GcodeFileRow = {
   metadata: { sources?: Record<string, "header" | "computed" | "default"> } | null;
   created_at: string;
 };
+
+export type JobStatus = "queued" | "printing" | "completed" | "failed" | "cancelled";
+
+export type PrintJobRow = {
+  id: string;
+  name: string;
+  project: string | null;
+  status: JobStatus;
+  started_at: string | null;
+  ended_at: string | null;
+  created_at: string;
+  est_filament_g: number | null;
+  est_duration_s: number | null;
+  weight_before_g: number | null;
+  weight_after_g: number | null;
+  actual_filament_g: number | null;
+  discrepancy_g: number | null;
+  discrepancy_pct: number | null;
+  spool_id: string | null;
+  spools: { name: string | null; material: string; color_name: string | null; color_hex: string | null; tare_weight_g: number; remaining_weight_g: number } | null;
+  printers: { name: string } | null;
+  gcode_files: { original_filename: string } | null;
+};

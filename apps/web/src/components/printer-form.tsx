@@ -5,6 +5,7 @@ import { useState, type FormEvent } from "react";
 import { RPC, TABLES } from "@filamentiq/shared";
 import { createClient } from "@/lib/supabase/client";
 import { ApiKeySchema, PRINTER_API_TYPES, PrinterInputSchema } from "@/lib/schemas";
+import { DROIDCAM_DEFAULT_URL } from "@/lib/camera";
 import { Field, FormMessage, ghostBtn, inputClass, num, primaryBtn, str } from "./ui";
 
 export function PrinterForm() {
@@ -72,7 +73,7 @@ export function PrinterForm() {
         <Field label="Base URL *" htmlFor="base_url" hint="URL tunnel yang bisa dijangkau dari server, mis. https://printer.example.com">
           <input id="base_url" name="base_url" type="url" required className={inputClass} />
         </Field>
-        <Field label="URL webcam" htmlFor="webcam_url"><input id="webcam_url" name="webcam_url" type="url" className={inputClass} /></Field>
+        <Field label="URL webcam / DroidCam" htmlFor="webcam_url" hint="Phone and browser must be on the same Wi-Fi."><input id="webcam_url" name="webcam_url" type="url" defaultValue={DROIDCAM_DEFAULT_URL} className={inputClass} /></Field>
         <Field label="API key / access code *" htmlFor="api_key" hint="Hanya bisa ditulis, tidak bisa dibaca kembali.">
           <input id="api_key" name="api_key" type="password" autoComplete="off" required className={inputClass} />
         </Field>

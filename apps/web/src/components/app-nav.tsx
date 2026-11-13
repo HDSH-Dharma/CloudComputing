@@ -10,10 +10,10 @@ export type NavItem = { href: string; label: string; ready: boolean };
 /** Flip `ready` to true as each stage's page lands. */
 export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", ready: true },
-  { href: "/spools", label: "Inventaris spool", ready: false },
-  { href: "/printers", label: "Printer", ready: false },
-  { href: "/gcode", label: "G-code", ready: false },
-  { href: "/jobs", label: "Print job", ready: false },
+  { href: "/spools", label: "Inventaris spool", ready: true },
+  { href: "/printers", label: "Printer", ready: true },
+  { href: "/gcode", label: "G-code", ready: true },
+  { href: "/jobs", label: "Print job", ready: true },
   { href: "/monitoring", label: "Live monitoring", ready: false },
   { href: "/assistant", label: "Asisten AI", ready: false },
   { href: "/telegram", label: "Telegram", ready: false },

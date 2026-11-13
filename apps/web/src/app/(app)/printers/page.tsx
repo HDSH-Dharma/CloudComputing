@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { RPC, TABLES } from "@filamentiq/shared";
 import { PrinterForm } from "@/components/printer-form";
+import { DroidCamConfig } from "@/components/droidcam-config";
 import { PrinterKeyForm } from "@/components/printer-key-form";
 import { EmptyState, ErrorState, PageHeader } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
@@ -53,6 +54,7 @@ export default async function PrintersPage() {
                 <dt>Status</dt><dd className="text-right">{p.is_active ? "Aktif" : "Nonaktif"}</dd>
               </dl>
               <PrinterKeyForm printerId={p.id} hasKey={p.hasKey} />
+              <DroidCamConfig printerId={p.id} currentUrl={p.webcam_url} />
             </li>
           ))}
         </ul>

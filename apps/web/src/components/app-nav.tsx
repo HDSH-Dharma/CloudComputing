@@ -1,94 +1,30 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "./logo";
 
-export type NavItem = { href: string; label: string; ready: boolean };
-
-/** Flip `ready` to true as each stage's page lands. */
-export const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", ready: true },
-  { href: "/spools", label: "Inventaris spool", ready: true },
-  { href: "/printers", label: "Printer", ready: true },
-  { href: "/gcode", label: "G-code", ready: true },
-  { href: "/jobs", label: "Print job", ready: true },
-  { href: "/monitoring", label: "Live monitoring", ready: false },
-  { href: "/assistant", label: "Asisten AI", ready: false },
-  { href: "/telegram", label: "Telegram", ready: false },
+type NavLink = { href: string; label: string };
+const mainLinks: NavLink[] = [
+  { href: "/dashboard", label: "Overview" },
+  { href: "/assistant", label: "AI assistant" },
+  { href: "/jobs", label: "Print jobs" },
+  { href: "/spools", label: "Filament inventory" },
 ];
-
+const setupLinks: NavLink[] = [
+  { href: "/printers", label: "Printers" },
+  { href: "/gcode", label: "G-code files" },
+];
+function NavGroup({ title, links, pathname, onNavigate }: { title: string; links: NavLink[]; pathname: string; onNavigate?: () => void }) {
+  return <div><p className="mb-3 px-3 font-mono text-[11px] font-semibold uppercase tracking-[.18em] text-slate-500">{title}</p><nav aria-label={title} className="flex flex-col gap-1">{links.map(({ href, label }) => {
+    const active = pathname === href || pathname.startsWith(`${href}/`);
+    return <Link key={href} href={href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={`rounded-xl px-3.5 py-3 text-sm transition ${active ? "bg-[#3a2c28] font-semibold text-[#f18a63]" : "text-slate-400 hover:bg-white/[.04] hover:text-slate-100"}`}>{label}</Link>;
+  })}</nav></div>;
+}
 export function AppNav({ email, signOut }: { email: string; signOut: () => Promise<void> }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-
-  const links = (
-    <nav aria-label="Navigasi utama" className="flex flex-col gap-1">
-      {NAV_ITEMS.map((item) => {
-        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-        const base = "flex items-center justify-between rounded-lg px-3 py-2 text-sm";
-        if (!item.ready) {
-          return (
-            <span key={item.href} aria-disabled className={`${base} cursor-not-allowed text-stone-400 dark:text-stone-600`}>
-              {item.label}
-              <span className="rounded bg-stone-200 px-1.5 py-0.5 text-[10px] uppercase dark:bg-stone-800">Segera</span>
-            </span>
-          );
-        }
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={() => setOpen(false)}
-            aria-current={active ? "page" : undefined}
-            className={`${base} ${active ? "bg-brand-100 font-medium text-brand-700 dark:bg-brand-700/20 dark:text-brand-100" : "hover:bg-stone-200/60 dark:hover:bg-stone-800"}`}
-          >
-            {item.label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-
-  const account = (
-    <div className="space-y-2 border-t border-stone-200 pt-4 dark:border-stone-800">
-      <p className="truncate px-3 text-xs text-stone-500" title={email}>{email}</p>
-      <form action={signOut}>
-        <button className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-stone-200/60 dark:hover:bg-stone-800">Keluar</button>
-      </form>
-    </div>
-  );
-
-  return (
-    <>
-      {/* Mobile top bar */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-stone-200 bg-stone-50/90 px-4 py-3 backdrop-blur md:hidden dark:border-stone-800 dark:bg-stone-950/90">
-        <Logo />
-        <button
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-controls="mobile-menu"
-          className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm dark:border-stone-700"
-        >
-          {open ? "Tutup" : "Menu"}
-        </button>
-      </header>
-      {open && (
-        <div id="mobile-menu" className="space-y-4 border-b border-stone-200 bg-stone-50 p-4 md:hidden dark:border-stone-800 dark:bg-stone-950">
-          {links}
-          {account}
-        </div>
-      )}
-
-      {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col justify-between border-r border-stone-200 p-4 md:flex dark:border-stone-800">
-        <div className="space-y-6">
-          <Logo className="px-3 text-lg" />
-          {links}
-        </div>
-        {account}
-      </aside>
-    </>
-  );
+  const account = <div className="space-y-3 border-t border-white/[.08] pt-4"><div className="flex items-center gap-2 px-3 text-xs text-slate-400"><span className="size-2 rounded-full bg-emerald-400"/>Cloud sync connected</div><p className="truncate px-3 text-xs text-slate-500" title={email}>{email}</p><form action={signOut}><button className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-400 hover:bg-white/[.04] hover:text-white">Sign out</button></form></div>;
+  return <><header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/[.08] bg-[#20272f]/95 px-4 py-3 backdrop-blur md:hidden"><Logo/><button onClick={() => setOpen(v => !v)} aria-expanded={open} aria-controls="mobile-menu" className="rounded-lg border border-white/10 px-3 py-1.5 text-sm">{open ? "Close" : "Menu"}</button></header>{open && <div id="mobile-menu" className="space-y-5 border-b border-white/[.08] bg-[#20272f] p-4 md:hidden"><NavGroup title="Workspace" links={mainLinks} pathname={pathname} onNavigate={() => setOpen(false)}/><NavGroup title="Setup" links={setupLinks} pathname={pathname} onNavigate={() => setOpen(false)}/>{account}</div>}<aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col justify-between border-r border-white/[.08] bg-[#242b33] px-5 py-7 md:flex"><div className="space-y-9"><Logo className="px-3 text-lg"/><NavGroup title="Workspace" links={mainLinks} pathname={pathname}/><NavGroup title="Setup" links={setupLinks} pathname={pathname}/></div>{account}</aside></>;
 }

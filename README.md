@@ -36,9 +36,9 @@ Owns the sensor-fusion core, since it depends on his physical printer. Lives in 
 ### Flabianos: Frontend & UX
 Owns everything the user sees. Lives in `apps/web/`.
 
-- [ ] Next.js app shell, Tailwind, auth pages, supabase-js integration
-- [ ] Pages: G-code upload, spool inventory, post-print weight entry, printer setup
-- [ ] Dashboard: job totals, remaining inventory, cost calculator
+- [x] Next.js app shell, Tailwind, auth pages, supabase-js integration
+- [x] Pages: G-code upload, spool inventory, post-print weight entry, printer setup
+- [x] Dashboard: job totals, remaining inventory, cost calculator
 - [ ] Recharts: temperature telemetry, estimated vs actual consumption, spend per day/project
 - [ ] Live monitoring view: latest snapshot, telemetry history, alert log
 - [ ] Chat UI for the AI Material Assistant

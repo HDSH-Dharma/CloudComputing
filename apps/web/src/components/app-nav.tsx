@@ -12,7 +12,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", ready: true },
   { href: "/spools", label: "Inventaris spool", ready: true },
   { href: "/printers", label: "Printer", ready: true },
-  { href: "/gcode", label: "G-code", ready: false },
+  { href: "/gcode", label: "G-code", ready: true },
   { href: "/jobs", label: "Print job", ready: false },
   { href: "/monitoring", label: "Live monitoring", ready: false },
   { href: "/assistant", label: "Asisten AI", ready: false },

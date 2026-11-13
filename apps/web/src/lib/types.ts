@@ -35,3 +35,28 @@ export type PrinterRow = {
   is_active: boolean;
   last_seen_at: string | null;
 };
+
+export type GcodeFileRow = {
+  id: string;
+  storage_path: string;
+  original_filename: string;
+  size_bytes: number | null;
+  parse_status: "pending" | "parsed" | "failed";
+  parse_error: string | null;
+  slicer: string | null;
+  filament_type: string | null;
+  filament_length_mm: number | null;
+  filament_weight_g: number | null;
+  filament_diameter_mm: number | null;
+  filament_density: number | null;
+  estimated_duration_s: number | null;
+  nozzle_temp_c: number | null;
+  bed_temp_c: number | null;
+  layer_height_mm: number | null;
+  first_layer_height_mm: number | null;
+  layer_count: number | null;
+  max_z_mm: number | null;
+  /** Full GcodeMetadata; `sources` tells whether each field came from the slicer header, was computed, or defaulted. */
+  metadata: { sources?: Record<string, "header" | "computed" | "default"> } | null;
+  created_at: string;
+};

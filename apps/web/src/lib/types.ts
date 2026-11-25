@@ -132,3 +132,39 @@ export type JobCostRow = {
 };
 
 export type ProfileSettings = { currency: string; electricity_rate_per_kwh: number };
+
+/** telemetry — one normalized sample per poll, written by the worker. */
+export type TelemetryRow = {
+  id: number;
+  captured_at: string;
+  state: string | null;
+  nozzle_temp_c: number | null;
+  nozzle_target_c: number | null;
+  bed_temp_c: number | null;
+  bed_target_c: number | null;
+  progress_pct: number | null;
+  current_layer: number | null;
+  total_layers: number | null;
+  z_height_mm: number | null;
+  time_remaining_s: number | null;
+};
+
+export type SnapshotRow = {
+  id: string;
+  storage_path: string;
+  captured_at: string;
+  diff_score: number | null;
+  ssim: number | null;
+  analyzed: boolean;
+};
+
+export type MonitoringEventRow = {
+  id: string;
+  status: "normal" | "warning";
+  confidence: number;
+  reason: string;
+  model: string | null;
+  alert_sent_at: string | null;
+  acknowledged_at: string | null;
+  created_at: string;
+};

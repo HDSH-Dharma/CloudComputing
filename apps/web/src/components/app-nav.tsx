@@ -8,6 +8,7 @@ import { Logo } from "./logo";
 type NavLink = { href: string; label: string };
 const mainLinks: NavLink[] = [
   { href: "/dashboard", label: "Overview" },
+  { href: "/monitoring", label: "Live monitoring" },
   { href: "/assistant", label: "AI assistant" },
   { href: "/jobs", label: "Print jobs" },
   { href: "/spools", label: "Filament inventory" },

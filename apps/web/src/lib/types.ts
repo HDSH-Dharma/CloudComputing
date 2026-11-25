@@ -83,3 +83,52 @@ export type PrintJobRow = {
   printers: { name: string } | null;
   gcode_files: { original_filename: string } | null;
 };
+
+/** v_daily_spend — one row per day in the user's timezone. Aggregates can be null when no job in the day has the value. */
+export type DailySpendRow = {
+  day: string;
+  jobs: number;
+  used_g: number | null;
+  est_g: number | null;
+  actual_g: number | null;
+  material_cost: number | null;
+  energy_cost: number | null;
+  total_cost: number | null;
+  wasted_g: number | null;
+};
+
+/** v_project_spend — one row per project. */
+export type ProjectSpendRow = {
+  project: string;
+  jobs: number;
+  used_g: number | null;
+  material_cost: number | null;
+  energy_cost: number | null;
+  total_cost: number | null;
+  avg_cost_per_job: number | null;
+  avg_discrepancy_pct: number | null;
+  last_job_at: string | null;
+};
+
+/** v_print_job_costs — one row per job with material + energy cost. */
+export type JobCostRow = {
+  id: string;
+  name: string;
+  project: string | null;
+  status: JobStatus;
+  job_date: string;
+  est_filament_g: number | null;
+  actual_filament_g: number | null;
+  discrepancy_g: number | null;
+  discrepancy_pct: number | null;
+  used_g: number | null;
+  is_measured: boolean;
+  is_waste: boolean;
+  material: string | null;
+  currency: string;
+  material_cost: number | null;
+  energy_cost: number | null;
+  total_cost: number | null;
+};
+
+export type ProfileSettings = { currency: string; electricity_rate_per_kwh: number };

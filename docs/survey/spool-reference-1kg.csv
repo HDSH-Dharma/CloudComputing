@@ -1,0 +1,11 @@
+brand,spool_type,net_weight_g,tare_weight_g,gross_full_g,price_min_idr,price_max_idr,tare_source,price_source,note
+Bambu Lab,reusable plastic,1000,250,1250,187000,,spoolvault.com,biggo.id (refill PLA Basic),refill has no spool of its own; tare applies once wound on the reusable spool
+eSUN,plastic,1000,240,1240,150000,236000,spoolvault.com,biggo.id; tokopedia.com,filamentcalcs gives 209-265 g
+eSUN,cardboard,1000,170,1170,150000,236000,spoolvault.com; filamentcalcs.com,biggo.id; tokopedia.com,
+Polymaker,cardboard,1000,140,1140,,,polymaker spec via filamentcalcs.com (140 +/- 7 g),,no Indonesian price found
+SUNLU,plastic,1000,189,1189,165000,265000,spoolvault.com,biggo.id; tokopedia.com,TPU spool 130 g
+Elegoo,cardboard,1000,154,1154,238000,260000,spoolvault.com,biggo.id (PLA Silk),
+Overture,cardboard,1000,155,1155,,,spoolvault.com,,1 kg size not stated explicitly
+Overture,plastic,1000,237,1237,,,spoolvault.com,,1 kg size not stated explicitly
+Prusament,plastic (no NFC),1000,193,1193,,,spoolvault.com; filamentcalcs.com (191-201 g),,
+Prusament,plastic (NFC),1000,278,1278,,,spoolvault.com; filamentcalcs.com (280 g),,

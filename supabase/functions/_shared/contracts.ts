@@ -22,6 +22,7 @@ export const TABLES = {
   monitoringEvents: "monitoring_events",
   aiChatSessions: "ai_chat_sessions",
   aiChatMessages: "ai_chat_messages",
+  spoolSurveySamples: "spool_survey_samples",
 } as const;
 
 export const VIEWS = {
@@ -44,6 +45,7 @@ export const RPC = {
 export const BUCKETS = {
   gcode: "gcode",
   snapshots: "snapshots",
+  spoolPhotos: "spool-photos",
 } as const;
 
 export const EDGE_FUNCTIONS = {
@@ -60,6 +62,8 @@ export const storagePaths = {
   /** snapshots/{ownerId}/{printerId}/{yyyy-mm-dd}/{epochMs}.jpg */
   snapshot: (ownerId: string, printerId: string, capturedAt: Date, ext: "jpg" | "png" | "webp" = "jpg") =>
     `${ownerId}/${printerId}/${capturedAt.toISOString().slice(0, 10)}/${capturedAt.getTime()}.${ext}`,
+  /** spool-photos/{ownerId}/{sampleId}.{ext} */
+  spoolPhoto: (ownerId: string, sampleId: string, ext: "jpg" | "png" | "webp") => `${ownerId}/${sampleId}.${ext}`,
   /** true if the path belongs to the given owner */
   isOwnedBy: (path: string, ownerId: string) => path.split("/")[0] === ownerId && !path.includes(".."),
 };

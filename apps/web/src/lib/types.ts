@@ -168,3 +168,19 @@ export type MonitoringEventRow = {
   acknowledged_at: string | null;
   created_at: string;
 };
+
+export type SurveySampleRow = {
+  id: string;
+  brand: string | null;
+  material: string;
+  color_name: string | null;
+  diameter_mm: number;
+  gross_weight_g: number;
+  tare_weight_g: number;
+  net_weight_g: number;
+  price_per_kg: number | null;
+  currency: string;
+  photo_path: string;
+  note: string | null;
+  measured_at: string;
+};

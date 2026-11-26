@@ -12,6 +12,7 @@ const mainLinks: NavLink[] = [
   { href: "/assistant", label: "AI assistant" },
   { href: "/jobs", label: "Print jobs" },
   { href: "/spools", label: "Filament inventory" },
+  { href: "/survey", label: "Spool survey" },
 ];
 const setupLinks: NavLink[] = [
   { href: "/printers", label: "Printers" },

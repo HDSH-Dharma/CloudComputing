@@ -38,6 +38,21 @@ jobs:
         with:
           deno-version: v2.x
       - run: deno check --config supabase/functions/deno.json supabase/functions/*/index.ts
+      # Dependabot only bumps package.json, so a security fix can miss the Deno pins.
+      # Fail when a package pinned in deno.json has a different version in package.json.
+      - name: Deno pins match package.json
+        run: |
+          fail=0
+          for spec in $(grep -ho '"npm:[^"]*"' supabase/functions/deno.json supabase/functions/*/deno.json | tr -d '"' | sort -u); do
+            spec=${spec#npm:}; name=${spec%@*}; ver=${spec##*@}
+            for pj in package.json apps/*/package.json packages/*/package.json; do
+              got=$(grep -o "\"$name\": *\"[^\"]*\"" "$pj" | sed 's/.*: *"\(.*\)"/\1/')
+              if [ -n "$got" ] && [ "$got" != "$ver" ]; then
+                echo "::error::$pj has $name $got but deno.json pins $ver"; fail=1
+              fi
+            done
+          done
+          exit $fail
 
   migrations:
     name: Validate Supabase migrations

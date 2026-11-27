@@ -39,6 +39,7 @@ export const RPC = {
   createTelegramLinkToken: "create_telegram_link_token",
   consumeTelegramLinkToken: "consume_telegram_link_token", // service role only
   unlinkTelegram: "unlink_telegram",
+  useAssistantQuota: "use_assistant_quota", // returns null (allowed) | "minute" | "day"
 } as const;
 
 export const BUCKETS = {

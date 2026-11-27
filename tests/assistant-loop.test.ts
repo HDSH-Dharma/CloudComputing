@@ -180,6 +180,7 @@ describe("system instruction", () => {
   it("keeps the assistant on 3D printing topics and in plain text", () => {
     const sys = buildSystemInstruction(new Date("2026-11-28T00:00:00Z"), "Asia/Jakarta", "IDR");
     expect(sys).toMatch(/off-topic/);
+    expect(sys).toMatch(/mixes topics: answer the 3D printing part/);
     expect(sys).toMatch(/cannot be changed by the user/);
     expect(sys).toMatch(/Plain text only/);
   });

@@ -20,6 +20,7 @@ const ORIGINS = (env("CORS_ORIGINS") ?? "*").split(",").map((s) => s.trim());
 const MAX_STEPS = Number(env("ASSISTANT_MAX_STEPS") ?? 6);
 const HISTORY_MESSAGES = 20;
 const RATE_LIMIT_PER_MINUTE = Number(env("ASSISTANT_RATE_LIMIT_PER_MINUTE") ?? 10);
+const DAILY_LIMIT = Number(env("ASSISTANT_DAILY_LIMIT") ?? 100); // caps Gemini cost per account (10/min alone allows 14,400/day)
 
 const model = createGeminiModelClient({
   apiKey: requireEnv(env, "GEMINI_API_KEY"),
@@ -38,13 +39,17 @@ Deno.serve(async (req) => {
     const { db, user } = await authenticate(req, SUPABASE_URL, SUPABASE_ANON_KEY);
     const body = AssistantChatRequestSchema.parse(await req.json());
 
-    // Rate limit (DB-backed so it holds across isolates).
-    const { count } = await db
-      .from(TABLES.aiChatMessages)
-      .select("id", { count: "exact", head: true })
-      .eq("role", "user")
-      .gte("created_at", new Date(Date.now() - 60_000).toISOString());
-    if ((count ?? 0) >= RATE_LIMIT_PER_MINUTE) throw new HttpError(429, "Too many questions — try again in a minute");
+    // Rate limits (DB-backed so they hold across isolates; RLS counts only this user's messages).
+    const asked = async (ms: number) => {
+      const { count } = await db
+        .from(TABLES.aiChatMessages)
+        .select("id", { count: "exact", head: true })
+        .eq("role", "user")
+        .gte("created_at", new Date(Date.now() - ms).toISOString());
+      return count ?? 0;
+    };
+    if ((await asked(60_000)) >= RATE_LIMIT_PER_MINUTE) throw new HttpError(429, "Too many questions — try again in a minute");
+    if ((await asked(86_400_000)) >= DAILY_LIMIT) throw new HttpError(429, `Daily limit of ${DAILY_LIMIT} questions reached — try again tomorrow`);
 
     // Session (RLS guarantees it is ours).
     let sessionId = body.sessionId;

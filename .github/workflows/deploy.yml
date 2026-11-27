@@ -32,7 +32,7 @@ jobs:
           CORS_ORIGINS: ${{ vars.CORS_ORIGINS }}
         run: |
           # Only send secrets that are set, so a missing one never overwrites a value with "".
-          args=(CORS_ORIGINS="${CORS_ORIGINS:-*}" GEMINI_MODEL="${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}")
+          args=(CORS_ORIGINS="${CORS_ORIGINS:-*}" GEMINI_MODEL="${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}")
           [ -n "$GEMINI_API_KEY" ] && args+=(GEMINI_API_KEY="$GEMINI_API_KEY")
           [ -n "$TELEGRAM_BOT_TOKEN" ] && args+=(TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN")
           supabase secrets set --yes --project-ref "$SUPABASE_PROJECT_REF" "${args[@]}"

@@ -27,16 +27,19 @@ describe("decide", () => {
     expect(stillSeconds([{ t: 0, motion: MOTION_EPS / 2 }, { t: 5, motion: 0 }])).toBe(5);
   });
   it("printing while the head moves", () => {
-    expect(decide(samples(0), vision("printing")).verdict).toBe("printing");
+    expect(decide(samples(0), [vision("printing")]).verdict).toBe("printing");
   });
   it("confident AI failure wins even while moving; low confidence does not", () => {
-    expect(decide(samples(0), vision("failure")).verdict).toBe("failure");
-    expect(decide(samples(0), vision("failure", 0.5)).verdict).toBe("printing");
+    expect(decide(samples(0), [vision("failure")]).verdict).toBe("failure");
+    expect(decide(samples(0), [vision("failure", 0.5)]).verdict).toBe("printing");
+  });
+  it("a confident failure sticks when a later frame looks fine", () => {
+    expect(decide(samples(0), [vision("idle"), vision("printing"), vision("failure")]).verdict).toBe("failure");
   });
   it("no motion + finished part = success, otherwise stalled", () => {
-    expect(decide(samples(STALL_SECONDS), vision("completed")).verdict).toBe("success");
-    expect(decide(samples(STALL_SECONDS), vision("printing")).verdict).toBe("stalled");
-    expect(decide(samples(STALL_SECONDS), null).verdict).toBe("stalled");
-    expect(decide(samples(STALL_SECONDS - 1), vision("completed")).verdict).toBe("printing");
+    expect(decide(samples(STALL_SECONDS), [vision("completed")]).verdict).toBe("success");
+    expect(decide(samples(STALL_SECONDS), [vision("printing")]).verdict).toBe("stalled");
+    expect(decide(samples(STALL_SECONDS), []).verdict).toBe("stalled");
+    expect(decide(samples(STALL_SECONDS - 1), [vision("completed")]).verdict).toBe("printing");
   });
 });

@@ -79,8 +79,7 @@ export function VideoDemo() {
     }
   }
 
-  const vision = log[0] ?? null;
-  const d = decide(samples, vision);
+  const d = decide(samples, log);
   const lastMotion = samples.at(-1)?.motion ?? 0;
 
   return <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
@@ -121,7 +120,7 @@ export function VideoDemo() {
       <h2 className="font-semibold text-slate-100">Cara deteksinya</h2>
       <p><b>1. Algoritma gerakan (tanpa AI).</b> Setiap 1 dtk, frame dikecilkan ke 160 px lalu dibandingkan dengan frame sebelumnya. Piksel yang tingkat abu-abunya berubah lebih dari 25 dihitung. Kalau kurang dari 0,4% piksel berubah, berarti tidak ada gerakan. Head printer yang sedang print selalu bergerak, jadi diam {STALL_SECONDS} dtk berarti print berhenti.</p>
       <p><b>2. AI vision (Gemini).</b> Setiap {AI_EVERY_S} dtk, dua frame (sekarang dan {AI_EVERY_S} dtk sebelumnya) dikirim ke Gemini. Gemini menjawab printing / failure / completed / idle, jenis kegagalannya (spaghetti, lepas dari bed, gumpalan, layer bergeser), tingkat keyakinan, dan alasannya.</p>
-      <p><b>3. Keputusan.</b> <b>Gagal</b> = AI melihat kegagalan dengan keyakinan ≥ 70%. <b>Sukses</b> = diam {STALL_SECONDS} dtk dan AI melihat objek selesai. <b>Macet</b> = diam {STALL_SECONDS} dtk tetapi objek belum selesai. Selain itu <b>sedang print</b>.</p>
+      <p><b>3. Keputusan.</b> <b>Gagal</b> = AI pernah melihat kegagalan dengan keyakinan ≥ 70% (status ini menetap, karena print yang gagal tidak bisa pulih). <b>Sukses</b> = diam {STALL_SECONDS} dtk dan AI melihat objek selesai. <b>Macet</b> = diam {STALL_SECONDS} dtk tetapi objek belum selesai. Selain itu <b>sedang print</b>.</p>
     </section>
   </div>;
 }

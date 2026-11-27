@@ -5,7 +5,7 @@
  *      always moves, so a long stretch without motion means the print stopped.
  *   2. Vision (AI): Gemini compares two frames ~10 s apart and says what it sees.
  * Rules (first match wins):
- *   - AI sees a failure (spaghetti, detached part, blob, layer shift) with confidence >= 0.7 -> failure
+ *   - AI saw a failure (spaghetti, detached part, blob, layer shift) with confidence >= 0.7, at any point -> failure
  *   - no motion for STALL_SECONDS and AI saw a finished part -> success
  *   - no motion for STALL_SECONDS otherwise                    -> stalled
  *   - else                                                     -> printing
@@ -62,11 +62,13 @@ export function stillSeconds(samples: MotionSample[]): number {
   return now - samples[0]!.t;
 }
 
-export function decide(samples: MotionSample[], vision: VisionResult | null): Decision {
+/** `history` is every AI result so far, newest first. */
+export function decide(samples: MotionSample[], history: VisionResult[]): Decision {
   const stillFor = stillSeconds(samples);
-  if (vision && vision.state === "failure" && vision.confidence >= AI_CONFIDENCE) {
-    return { verdict: "failure", reason: `AI: ${vision.reason}`, stillFor };
-  }
+  // A failed print never recovers, so a confident failure sticks even if a later frame looks fine.
+  const failed = history.find((v) => v.state === "failure" && v.confidence >= AI_CONFIDENCE);
+  if (failed) return { verdict: "failure", reason: `AI: ${failed.reason}`, stillFor };
+  const vision = history[0] ?? null;
   if (stillFor >= STALL_SECONDS) {
     if (vision && vision.state === "completed" && vision.confidence >= AI_CONFIDENCE) {
       return { verdict: "success", reason: `Tidak ada gerakan ${Math.round(stillFor)} dtk dan AI melihat objek selesai: ${vision.reason}`, stillFor };

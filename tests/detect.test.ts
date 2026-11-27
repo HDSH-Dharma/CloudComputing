@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decide, MOTION_EPS, motionScore, STALL_SECONDS, stillSeconds, type VisionResult } from "../supabase/functions/_shared/monitor/detect.ts";
+import { decide, mlTrigger, MOTION_EPS, motionScore, rgbaToChw, STALL_SECONDS, stillSeconds, type VisionResult } from "../supabase/functions/_shared/monitor/detect.ts";
 
 const frame = (n: number, grey: number) => Array.from({ length: n * 4 }, (_, i) => (i % 4 === 3 ? 255 : grey));
 const vision = (state: VisionResult["state"], confidence = 0.9): VisionResult => ({ state, failure_type: state === "failure" ? "spaghetti" : "none", confidence, reason: "x" });
@@ -41,5 +41,19 @@ describe("decide", () => {
     expect(decide(samples(STALL_SECONDS), [vision("printing")]).verdict).toBe("stalled");
     expect(decide(samples(STALL_SECONDS), []).verdict).toBe("stalled");
     expect(decide(samples(STALL_SECONDS - 1), [vision("completed")]).verdict).toBe("printing");
+  });
+});
+
+describe("ML classifier", () => {
+  it("asks Gemini once when three frames in a row look failed", () => {
+    expect(mlTrigger([0.9, 0.9])).toBe(false);
+    expect(mlTrigger([0.1, 0.9, 0.9, 0.9])).toBe(true);
+    expect(mlTrigger([0.1, 0.9, 0.9, 0.9, 0.9])).toBe(false); // same streak, already asked
+    expect(mlTrigger([0.9, 0.5, 0.9])).toBe(false);
+    expect(mlTrigger([0.9, 0.9, 0.9, 0.2, 0.9, 0.9, 0.9])).toBe(true); // a new streak asks again
+  });
+  it("turns RGBA pixels into RGB planes scaled 0-1", () => {
+    const chw = Array.from(rgbaToChw([255, 0, 51, 255, 0, 255, 102, 255]));
+    [1, 0, 0, 1, 0.2, 0.4].forEach((v, i) => expect(chw[i]).toBeCloseTo(v));
   });
 });

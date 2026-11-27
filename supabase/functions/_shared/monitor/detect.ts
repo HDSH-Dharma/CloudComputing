@@ -4,6 +4,8 @@
  *   1. Motion (algorithm): pixel difference between frames 1 s apart. A printing head
  *      always moves, so a long stretch without motion means the print stopped.
  *   2. Vision (AI): Gemini compares two frames ~10 s apart and says what it sees.
+ *   3. Classifier (ML, optional): a small model trained in ml/train.ipynb scores every frame in the browser.
+ *      It never decides on its own: a streak of "looks like a failure" asks Gemini to check right away.
  * Rules (first match wins):
  *   - AI saw a failure (spaghetti, detached part, blob, layer shift) with confidence >= 0.7, at any point -> failure
  *   - no motion for STALL_SECONDS and AI saw a finished part -> success
@@ -16,6 +18,8 @@ export const PIXEL_DELTA = 25; // grey-level change that counts as "this pixel c
 export const MOTION_EPS = 0.004; // < 0.4 % changed pixels = no motion
 export const STALL_SECONDS = 20; // video seconds without motion before we call it stopped
 export const AI_CONFIDENCE = 0.7;
+export const ML_FAILURE = 0.8; // classifier failure probability that counts as "looks like a failure"
+export const ML_STREAK = 3; // consecutive 1 s frames before asking Gemini early (one odd frame is not enough)
 
 export const VisionState = z.enum(["printing", "failure", "completed", "idle"]);
 export type VisionState = z.infer<typeof VisionState>;
@@ -76,4 +80,23 @@ export function decide(samples: MotionSample[], history: VisionResult[]): Decisi
     return { verdict: "stalled", reason: `Tidak ada gerakan selama ${Math.round(stillFor)} dtk tetapi print belum terlihat selesai.`, stillFor };
   }
   return { verdict: "printing", reason: "Head masih bergerak dan AI tidak melihat kegagalan.", stillFor };
+}
+
+/** True once per streak: when the last ML_STREAK failure probabilities (newest last) all pass ML_FAILURE. */
+export function mlTrigger(failureProbs: number[]): boolean {
+  const n = failureProbs.length;
+  if (n < ML_STREAK || failureProbs.slice(-ML_STREAK).some((p) => p < ML_FAILURE)) return false;
+  return n === ML_STREAK || failureProbs[n - ML_STREAK - 1]! < ML_FAILURE;
+}
+
+/** Canvas RGBA pixels -> the model's input: RGB planes (CHW), 0-1. */
+export function rgbaToChw(rgba: ArrayLike<number>): Float32Array {
+  const n = rgba.length / 4;
+  const out = new Float32Array(3 * n);
+  for (let i = 0; i < n; i++) {
+    out[i] = rgba[i * 4]! / 255;
+    out[n + i] = rgba[i * 4 + 1]! / 255;
+    out[2 * n + i] = rgba[i * 4 + 2]! / 255;
+  }
+  return out;
 }

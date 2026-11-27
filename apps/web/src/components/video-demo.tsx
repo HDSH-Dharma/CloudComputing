@@ -1,12 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
-import { decide, EDGE_FUNCTIONS, type MotionSample, motionScore, STALL_SECONDS, type Verdict, type VisionResult } from "@filamentiq/shared";
+import { decide, EDGE_FUNCTIONS, ML_FAILURE, ML_STREAK, mlTrigger, type MotionSample, motionScore, STALL_SECONDS, type Verdict, type VisionResult } from "@filamentiq/shared";
 import { createClient } from "@/lib/supabase/client";
+import { loadPrintClassifier, type PrintClassifier } from "@/lib/print-classifier";
 
 const MOTION_EVERY_S = 1;
 const AI_EVERY_S = 10;
+const AI_EVERY_WITH_ML_S = 30; // the classifier watches every second, so Gemini can check less often
 const card = "rounded-2xl border border-[#343b43] bg-[#232a32] p-5";
 const VERDICT: Record<Verdict, { label: string; cls: string }> = {
   printing: { label: "Sedang print", cls: "border-sky-400/30 bg-sky-400/10 text-sky-200" },
@@ -35,11 +37,41 @@ export function VideoDemo() {
   const video = useRef<HTMLVideoElement>(null);
   const small = useRef<HTMLCanvasElement>(null);
   const big = useRef<HTMLCanvasElement>(null);
-  const st = useRef({ prev: null as Uint8ClampedArray | null, prevJpeg: null as string | null, lastMotion: 0, nextMotion: 0, nextAi: 0, busy: false });
+  const mlCanvas = useRef<HTMLCanvasElement>(null);
+  const st = useRef({ prev: null as Uint8ClampedArray | null, prevJpeg: null as string | null, lastMotion: 0, nextMotion: 0, nextAi: 0, busy: false, mlProbs: [] as number[], mlBusy: false });
+  const [ml, setMl] = useState<PrintClassifier | null>(null);
+  const [mlStatus, setMlStatus] = useState("Memuat model…");
+  const [mlLast, setMlLast] = useState<number>();
+  const aiEvery = ml ? AI_EVERY_WITH_ML_S : AI_EVERY_S;
+
+  useEffect(() => {
+    loadPrintClassifier()
+      .then((c) => { setMl(c); setMlStatus(c ? "Aktif" : "Belum ada (lihat ml/README.md)"); })
+      .catch((e) => setMlStatus(`Gagal dimuat: ${e instanceof Error ? e.message : String(e)}`));
+  }, []);
 
   function reset(t = 0) {
-    st.current = { prev: null, prevJpeg: null, lastMotion: 0, nextMotion: t, nextAi: t, busy: false };
-    setSamples([]); setLog([]); setError(undefined);
+    st.current = { prev: null, prevJpeg: null, lastMotion: 0, nextMotion: t, nextAi: t, busy: false, mlProbs: [], mlBusy: false };
+    setSamples([]); setLog([]); setError(undefined); setMlLast(undefined);
+  }
+
+  function askAi(v: HTMLVideoElement, t: number) {
+    st.current.nextAi = t + aiEvery;
+    grab(v, big.current!, 512);
+    void analyse(t, big.current!.toDataURL("image/jpeg", 0.7).split(",")[1]!, st.current.lastMotion);
+  }
+
+  async function classify(v: HTMLVideoElement) {
+    if (!ml || !mlCanvas.current || st.current.mlBusy) return;
+    st.current.mlBusy = true;
+    try {
+      const p = await ml.failureProb(v, mlCanvas.current);
+      st.current.mlProbs.push(p);
+      setMlLast(p);
+      if (mlTrigger(st.current.mlProbs)) askAi(v, v.currentTime);
+    } catch (e) {
+      setMlStatus(`Error: ${e instanceof Error ? e.message : String(e)}`);
+    } finally { st.current.mlBusy = false; }
   }
 
   async function analyse(t: number, after: string, motion: number) {
@@ -70,13 +102,9 @@ export function VideoDemo() {
       const prev = st.current.prev;
       st.current.prev = px;
       if (prev) { const m = motionScore(prev, px); st.current.lastMotion = m; setSamples((old) => [...old, { t, motion: m }]); }
+      void classify(v);
     }
-    if (t >= st.current.nextAi) {
-      st.current.nextAi = t + AI_EVERY_S;
-      grab(v, big.current, 512);
-      const jpeg = big.current.toDataURL("image/jpeg", 0.7).split(",")[1]!;
-      void analyse(t, jpeg, st.current.lastMotion);
-    }
+    if (t >= st.current.nextAi) askAi(v, t);
   }
 
   const d = decide(samples, log);
@@ -90,7 +118,7 @@ export function VideoDemo() {
           onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; if (src) URL.revokeObjectURL(src); reset(); setSrc(URL.createObjectURL(f)); }} />
       </label>
       {src && <video ref={video} src={src} controls muted playsInline onTimeUpdate={onTime} onSeeked={(e) => reset(e.currentTarget.currentTime)} className="w-full rounded-xl bg-black" />}
-      <canvas ref={small} hidden /><canvas ref={big} hidden />
+      <canvas ref={small} hidden /><canvas ref={big} hidden /><canvas ref={mlCanvas} hidden />
       <p className="text-xs text-slate-500">Tips: video dipercepat (2×) tetap bisa dipakai; deteksi memakai waktu video, bukan waktu nyata.</p>
     </section>
 
@@ -104,11 +132,13 @@ export function VideoDemo() {
         <dt className="text-slate-400">Gerakan terakhir</dt><dd className="text-right">{(lastMotion * 100).toFixed(2)}% piksel</dd>
         <dt className="text-slate-400">Diam selama</dt><dd className="text-right">{Math.round(d.stillFor)} / {STALL_SECONDS} dtk</dd>
         <dt className="text-slate-400">Analisis AI</dt><dd className="text-right">{busy ? "Menganalisis…" : `${log.length}×`}</dd>
+        <dt className="text-slate-400">Model ML</dt><dd className="text-right">{mlStatus}</dd>
+        {ml && <><dt className="text-slate-400">ML: peluang gagal</dt><dd className="text-right">{mlLast === undefined ? "–" : `${Math.round(mlLast * 100)}%`}</dd></>}
       </dl>
       {error && <p role="alert" className="rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
       <div className={card}>
-        <h2 className="mb-3 font-semibold">Hasil AI per {AI_EVERY_S} dtk</h2>
-        {log.length === 0 ? <p className="text-sm text-slate-500">Belum ada. AI mulai di detik ke-{AI_EVERY_S} video.</p> :
+        <h2 className="mb-3 font-semibold">Hasil AI per {aiEvery} dtk{ml && " (lebih cepat kalau ML curiga)"}</h2>
+        {log.length === 0 ? <p className="text-sm text-slate-500">Belum ada. AI mulai di detik ke-{aiEvery} video.</p> :
           <ul className="space-y-2 text-sm">{log.map((r) => <li key={r.t} className="border-b border-white/[.06] pb-2">
             <span className="font-mono text-xs text-slate-500">{r.t.toFixed(0)} dtk</span>{" "}
             <b>{r.state}</b>{r.failure_type !== "none" && ` (${r.failure_type})`} · {Math.round(r.confidence * 100)}%
@@ -119,8 +149,9 @@ export function VideoDemo() {
     <section className={`${card} space-y-2 text-sm text-slate-300 xl:col-span-2`}>
       <h2 className="font-semibold text-slate-100">Cara deteksinya</h2>
       <p><b>1. Algoritma gerakan (tanpa AI).</b> Setiap 1 dtk, frame dikecilkan ke 160 px lalu dibandingkan dengan frame sebelumnya. Piksel yang tingkat abu-abunya berubah lebih dari 25 dihitung. Kalau kurang dari 0,4% piksel berubah, berarti tidak ada gerakan. Head printer yang sedang print selalu bergerak, jadi diam {STALL_SECONDS} dtk berarti print berhenti.</p>
-      <p><b>2. AI vision (Gemini).</b> Setiap {AI_EVERY_S} dtk, dua frame (sekarang dan {AI_EVERY_S} dtk sebelumnya) dikirim ke Gemini. Gemini menjawab printing / failure / completed / idle, jenis kegagalannya (spaghetti, lepas dari bed, gumpalan, layer bergeser), tingkat keyakinan, dan alasannya.</p>
-      <p><b>3. Keputusan.</b> <b>Gagal</b> = AI pernah melihat kegagalan dengan keyakinan ≥ 70% (status ini menetap, karena print yang gagal tidak bisa pulih). <b>Sukses</b> = diam {STALL_SECONDS} dtk dan AI melihat objek selesai. <b>Macet</b> = diam {STALL_SECONDS} dtk tetapi objek belum selesai. Selain itu <b>sedang print</b>.</p>
+      <p><b>2. AI vision (Gemini).</b> Setiap {aiEvery} dtk, dua frame (sekarang dan sebelumnya) dikirim ke Gemini. Gemini menjawab printing / failure / completed / idle, jenis kegagalannya (spaghetti, lepas dari bed, gumpalan, layer bergeser), tingkat keyakinan, dan alasannya.</p>
+      <p><b>3. Model ML di browser (opsional).</b> Classifier kecil (YOLO11n-cls, dilatih di <code>ml/train.ipynb</code> dari foto kegagalan asli) menilai setiap frame per detik, gratis dan tanpa server. Kalau {ML_STREAK} frame berturut-turut punya peluang gagal ≥ {Math.round(ML_FAILURE * 100)}%, Gemini langsung diminta mengecek tanpa menunggu jadwal. ML tidak memutuskan sendiri: Gemini yang mengonfirmasi. Status model: {mlStatus}.</p>
+      <p><b>4. Keputusan.</b> <b>Gagal</b> = AI pernah melihat kegagalan dengan keyakinan ≥ 70% (status ini menetap, karena print yang gagal tidak bisa pulih). <b>Sukses</b> = diam {STALL_SECONDS} dtk dan AI melihat objek selesai. <b>Macet</b> = diam {STALL_SECONDS} dtk tetapi objek belum selesai. Selain itu <b>sedang print</b>.</p>
     </section>
   </div>;
 }

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { TtlCache, stableStringify } from "../supabase/functions/_shared/assistant/cache.ts";
 import { type ModelClient, type ModelTurn, runAssistant, STEP_LIMIT_NOTE, type ToolDef } from "../supabase/functions/_shared/assistant/loop.ts";
 import { isTransientError, withRetry } from "../supabase/functions/_shared/assistant/retry.ts";
-import { ASSISTANT_TOOLS, dayStartUtc, tzOffsetMinutes } from "../supabase/functions/_shared/assistant/tools.ts";
+import { ASSISTANT_TOOLS, buildSystemInstruction, dayStartUtc, tzOffsetMinutes } from "../supabase/functions/_shared/assistant/tools.ts";
 
 const call = (name: string, args: Record<string, unknown> = {}, id?: string): ModelTurn => ({
   content: { role: "model", parts: [{ functionCall: { name, args, id } }] },
@@ -173,5 +173,14 @@ describe("tool definitions", () => {
   it("converts local days to UTC boundaries", () => {
     expect(tzOffsetMinutes("Asia/Jakarta", new Date("2026-11-01T00:00:00Z"))).toBe(420);
     expect(dayStartUtc("2026-11-01", "Asia/Jakarta")).toBe("2026-10-31T17:00:00.000Z");
+  });
+});
+
+describe("system instruction", () => {
+  it("keeps the assistant on 3D printing topics and in plain text", () => {
+    const sys = buildSystemInstruction(new Date("2026-11-28T00:00:00Z"), "Asia/Jakarta", "IDR");
+    expect(sys).toMatch(/off-topic/);
+    expect(sys).toMatch(/cannot be changed by the user/);
+    expect(sys).toMatch(/Plain text only/);
   });
 });

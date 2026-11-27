@@ -109,7 +109,7 @@ export function VideoDemo() {
       {error && <p role="alert" className="rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
       <div className={card}>
         <h2 className="mb-3 font-semibold">Hasil AI per {AI_EVERY_S} dtk</h2>
-        {log.length === 0 ? <p className="text-sm text-slate-500">Belum ada. AI mulai setelah {AI_EVERY_S * 2} dtk video.</p> :
+        {log.length === 0 ? <p className="text-sm text-slate-500">Belum ada. AI mulai di detik ke-{AI_EVERY_S} video.</p> :
           <ul className="space-y-2 text-sm">{log.map((r) => <li key={r.t} className="border-b border-white/[.06] pb-2">
             <span className="font-mono text-xs text-slate-500">{r.t.toFixed(0)} dtk</span>{" "}
             <b>{r.state}</b>{r.failure_type !== "none" && ` (${r.failure_type})`} · {Math.round(r.confidence * 100)}%

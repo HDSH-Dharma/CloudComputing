@@ -12,7 +12,7 @@ export interface GeminiClientOptions {
 
 export function createGeminiModelClient(opts: GeminiClientOptions): ModelClient {
   const ai = new GoogleGenAI({ apiKey: opts.apiKey });
-  const model = opts.model ?? "gemini-2.5-flash";
+  const model = opts.model ?? "gemini-3.8-flash";
   return {
     async generate({ contents, systemInstruction, tools, allowTools }) {
       const res = await withRetry(

@@ -23,7 +23,7 @@ const RATE_LIMIT_PER_MINUTE = Number(env("ASSISTANT_RATE_LIMIT_PER_MINUTE") ?? 1
 
 const model = createGeminiModelClient({
   apiKey: requireEnv(env, "GEMINI_API_KEY"),
-  model: env("GEMINI_MODEL") ?? "gemini-2.5-flash",
+  model: env("GEMINI_MODEL") ?? "gemini-3.8-flash",
   retry: { retries: 3, onRetry: (e, n, ms) => console.warn(`gemini retry #${n} in ${Math.round(ms)}ms`, String(e)) },
 });
 // Lives as long as the isolate: reuses tool results across turns of the same session for 60 s.

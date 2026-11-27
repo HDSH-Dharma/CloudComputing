@@ -49,6 +49,7 @@ export const BUCKETS = {
 export const EDGE_FUNCTIONS = {
   gcodeParse: "gcode-parse",
   assistantChat: "assistant-chat",
+  monitorDemo: "monitor-demo",
 } as const;
 
 // ---------------------------------------------------------------------------

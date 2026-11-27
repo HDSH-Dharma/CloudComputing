@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { TABLES } from "@filamentiq/shared";
 import { MonitoringLive } from "@/components/monitoring-live";
-import { EmptyState, ErrorState, PageHeader } from "@/components/ui";
+import { EmptyState, ErrorState, ghostBtn, PageHeader } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import type { MonitoringEventRow, PrinterRow, SnapshotRow, TelemetryRow } from "@/lib/types";
@@ -15,7 +15,7 @@ export default async function MonitoringPage({ searchParams }: { searchParams: P
   const { printer: wanted } = await searchParams;
   const supabase = await createClient();
   const { data: printers, error } = await supabase.from(TABLES.printers).select("id,name,model,is_active,last_seen_at").order("name").returns<PrinterRow[]>();
-  const header = <PageHeader title="Live monitoring" description="Snapshot kamera, telemetry, dan hasil analisis AI. Hanya peringatan: print tidak pernah dibatalkan otomatis." />;
+  const header = <PageHeader title="Live monitoring" description="Snapshot kamera, telemetry, dan hasil analisis AI. Hanya peringatan: print tidak pernah dibatalkan otomatis." action={<Link href="/monitoring/demo" className={ghostBtn}>Demo dari video</Link>} />;
   if (error) return <div className="space-y-6">{header}<ErrorState message={error.message} /></div>;
   if (!printers?.length) return <div className="space-y-6">{header}<EmptyState title="Belum ada printer" hint="Tambahkan printer di halaman Printers untuk mulai memantau." /></div>;
 

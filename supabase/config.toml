@@ -45,3 +45,6 @@ verify_jwt = true
 
 [functions.assistant-chat]
 verify_jwt = true
+
+[functions.monitor-demo]
+verify_jwt = true

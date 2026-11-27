@@ -6,7 +6,7 @@
  * caller's JWT, so RLS keeps the model inside the user's own data.
  */
 import type { Content } from "@google/genai";
-import { AssistantChatRequestSchema, type AssistantChatResponse, TABLES } from "../_shared/contracts.ts";
+import { AssistantChatRequestSchema, type AssistantChatResponse, RPC, TABLES } from "../_shared/contracts.ts";
 import { TtlCache } from "../_shared/assistant/cache.ts";
 import { createGeminiModelClient } from "../_shared/assistant/gemini.ts";
 import { runAssistant } from "../_shared/assistant/loop.ts";
@@ -39,17 +39,11 @@ Deno.serve(async (req) => {
     const { db, user } = await authenticate(req, SUPABASE_URL, SUPABASE_ANON_KEY);
     const body = AssistantChatRequestSchema.parse(await req.json());
 
-    // Rate limits (DB-backed so they hold across isolates; RLS counts only this user's messages).
-    const asked = async (ms: number) => {
-      const { count } = await db
-        .from(TABLES.aiChatMessages)
-        .select("id", { count: "exact", head: true })
-        .eq("role", "user")
-        .gte("created_at", new Date(Date.now() - ms).toISOString());
-      return count ?? 0;
-    };
-    if ((await asked(60_000)) >= RATE_LIMIT_PER_MINUTE) throw new HttpError(429, "Too many questions — try again in a minute");
-    if ((await asked(86_400_000)) >= DAILY_LIMIT) throw new HttpError(429, `Daily limit of ${DAILY_LIMIT} questions reached — try again tomorrow`);
+    // Rate limits: atomic per-user check in the DB, so deleting chats or parallel requests cannot get around them.
+    const { data: limited, error: quotaError } = await db.rpc(RPC.useAssistantQuota, { p_per_minute: RATE_LIMIT_PER_MINUTE, p_per_day: DAILY_LIMIT });
+    if (quotaError) throw new HttpError(500, quotaError.message);
+    if (limited === "minute") throw new HttpError(429, "Too many questions — try again in a minute");
+    if (limited === "day") throw new HttpError(429, `Daily limit of ${DAILY_LIMIT} questions reached — try again tomorrow`);
 
     // Session (RLS guarantees it is ours).
     let sessionId = body.sessionId;

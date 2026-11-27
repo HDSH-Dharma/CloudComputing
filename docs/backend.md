@@ -73,7 +73,7 @@ Request `{ sessionId?, message }` → response `{ sessionId, reply, toolCalls[],
 - Step limit: `ASSISTANT_MAX_STEPS` (default 6) model turns; after that the model must answer without tools.
 - Result reuse: identical tool calls (same name + args, any key order) within 60 s reuse the result, scoped per user + session.
 - Retries: 429/5xx/network errors from Gemini retried 3× with exponential backoff + jitter.
-- Tool errors / invalid args are sent back to the model, not thrown. Rate limits: 10 questions/min and 100 per 24 h per user (`ASSISTANT_RATE_LIMIT_PER_MINUTE`, `ASSISTANT_DAILY_LIMIT`).
+- Tool errors / invalid args are sent back to the model, not thrown. Rate limits: 10 questions/min and 100 per 24 h per user (`ASSISTANT_RATE_LIMIT_PER_MINUTE`, `ASSISTANT_DAILY_LIMIT`), checked atomically by `use_assistant_quota()` against `ai_usage`, a log users cannot edit or delete.
 - Scope: only FilamentIQ data and FDM 3D printing; off-topic parts of a message are skipped, fully off-topic messages get a one-line refusal.
 - Tools (read-only, RLS-scoped): `get_spool_inventory`, `get_print_history`, `get_consumption_summary`,
   `get_estimate_accuracy`, `find_gcode_files`, `recommend_spool_for_job`, `estimate_print_cost`, `get_telemetry_summary`.

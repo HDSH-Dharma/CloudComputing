@@ -1,0 +1,9 @@
+<!-- Used for both "Magic Link" and "Confirm signup" (new users get the confirm template). Paste into
+     Supabase Dashboard > Authentication > Emails > Templates. {{ .Token }} makes Supabase send a code. -->
+<div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1f2937">
+  <h2 style="margin: 0 0 12px">Kode masuk FilamentIQ</h2>
+  <p style="margin: 0 0 16px">Masukkan kode ini di halaman masuk FilamentIQ:</p>
+  <p style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 0 0 16px">{{ .Token }}</p>
+  <p style="margin: 0 0 8px; font-size: 14px">Kode berlaku 10 menit dan hanya bisa dipakai sekali.</p>
+  <p style="margin: 0; font-size: 12px; color: #6b7280">Kalau kamu tidak meminta kode ini, abaikan email ini. Jangan bagikan kode ke siapa pun.</p>
+</div>

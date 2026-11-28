@@ -35,6 +35,19 @@ enable_signup = true
 [auth.email]
 enabled = true
 enable_confirmations = false
+# Login is passwordless: Supabase emails a one-time code (production sends it through Purelymail SMTP,
+# set in the dashboard). Locally they land in the CLI mail catcher at http://localhost:54324.
+otp_length = 6
+otp_expiry = 600
+max_frequency = "60s"
+
+[auth.email.template.magic_link]
+subject = "Kode masuk FilamentIQ"
+content_path = "./supabase/templates/otp.html"
+
+[auth.email.template.confirmation]
+subject = "Kode masuk FilamentIQ"
+content_path = "./supabase/templates/otp.html"
 
 [edge_runtime]
 enabled = true

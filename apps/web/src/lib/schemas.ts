@@ -1,10 +1,8 @@
 import { z } from "zod";
 
-export const CredentialsSchema = z.object({
-  email: z.string().trim().email("Email tidak valid"),
-  password: z.string().min(8, "Password minimal 8 karakter").max(72, "Password maksimal 72 karakter"),
-});
-export type Credentials = z.infer<typeof CredentialsSchema>;
+// --- Login: passwordless, a one-time code is emailed (Supabase Auth over the project's SMTP) ---
+export const EmailSchema = z.string().trim().toLowerCase().email("Email tidak valid");
+export const OtpCodeSchema = z.string().trim().regex(/^\d{6,10}$/, "Masukkan kode angka dari email");
 
 // --- Printer setup form (columns of `printers`; the API key goes through the set_printer_credentials RPC) ---
 export const PRINTER_API_TYPES = ["octoprint", "moonraker", "bambu"] as const;

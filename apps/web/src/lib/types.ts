@@ -168,9 +168,3 @@ export type MonitoringEventRow = {
   acknowledged_at: string | null;
   created_at: string;
 };
-
-/** ai_chat_sessions — one row per conversation with the material assistant. */
-export type ChatSessionRow = { id: string; title: string | null; updated_at: string };
-
-/** ai_chat_messages — `tool_calls` is [{name,args,cached,ok,error?}] on model turns. */
-export type ChatMessageRow = { id: number; role: "user" | "model"; text: string; tool_calls: unknown };

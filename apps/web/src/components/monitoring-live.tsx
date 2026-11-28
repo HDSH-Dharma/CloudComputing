@@ -6,9 +6,10 @@ import { createClient } from "@/lib/supabase/client";
 import { formatDateTime, formatDuration, formatNumber } from "@/lib/format";
 import { EventLog } from "@/components/event-log";
 import { TelemetryChart } from "@/components/telemetry-chart";
+import { mergeNewestFirst } from "@/lib/realtime-merge";
 import type { MonitoringEventRow, SnapshotRow, TelemetryRow } from "@/lib/types";
 
-const POLL_MS = 10_000;
+const POLL_MS = 10_000; // only used while the realtime connection is down
 const STALE_MS = 2 * 60_000;
 const URL_TTL_S = 300;
 const TELEMETRY_COLS = "id,captured_at,state,nozzle_temp_c,nozzle_target_c,bed_temp_c,bed_target_c,progress_pct,current_layer,total_layers,z_height_mm,time_remaining_s";
@@ -27,6 +28,7 @@ export function MonitoringLive({ printerId, initialTelemetry, initialSnapshot, i
   const [ackBusy, setAckBusy] = useState<string | null>(null);
   const [ackError, setAckError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [live, setLive] = useState(false);
   const signed = useRef<{ id: string; at: number } | null>(null);
 
   const signUrl = useCallback(async (snap: SnapshotRow | null) => {
@@ -54,13 +56,38 @@ export function MonitoringLive({ printerId, initialTelemetry, initialSnapshot, i
     if (!e.error && e.data) setEvents(e.data);
   }, [supabase, printerId, signUrl]);
 
-  useEffect(() => { void signUrl(initialSnapshot); }, [signUrl, initialSnapshot]);
+  useEffect(() => { void signUrl(snapshot); }, [signUrl, snapshot]);
+
+  // Supabase Realtime: new rows arrive as soon as they are written. RLS still applies per user.
   useEffect(() => {
-    const tick = () => { if (!document.hidden) void refresh(); };
+    const filter = `printer_id=eq.${printerId}`;
+    const channel = supabase.channel(`monitoring:${printerId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: TABLES.telemetry, filter }, ({ new: row }) => {
+        setTelemetry((old) => [...old, row as TelemetryRow].slice(-120));
+        setNow(Date.now());
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: TABLES.snapshots, filter }, ({ new: row }) => {
+        const snap = row as SnapshotRow;
+        if (snap.id) setSnapshot((cur) => (!cur || snap.captured_at >= cur.captured_at ? snap : cur)); // deletes carry no row
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: TABLES.monitoringEvents, filter }, ({ new: row }) => {
+        const ev = row as MonitoringEventRow;
+        if (ev.id) setEvents((old) => mergeNewestFirst(old, ev, 30));
+      })
+      .subscribe((status) => {
+        setLive(status === "SUBSCRIBED");
+        if (status === "SUBSCRIBED") void refresh(); // catch up on anything missed while connecting
+      });
+    return () => { void supabase.removeChannel(channel); };
+  }, [supabase, printerId, refresh]);
+
+  // Fallback while realtime is down; with realtime up, only the clock ticks for the "stale" badge.
+  useEffect(() => {
+    const tick = () => { if (document.hidden) return; if (live) setNow(Date.now()); else void refresh(); };
     const id = setInterval(tick, POLL_MS);
     document.addEventListener("visibilitychange", tick);
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", tick); };
-  }, [refresh]);
+  }, [refresh, live]);
 
   async function acknowledge(id: string) {
     setAckBusy(id); setAckError(null);
@@ -94,7 +121,10 @@ export function MonitoringLive({ printerId, initialTelemetry, initialSnapshot, i
         <article className={card}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-xl font-semibold">Suhu</h2>
-            <span className={`rounded-full px-3 py-1 font-mono text-xs ${stale ? "bg-amber-400/10 text-amber-300" : "bg-emerald-400/10 text-emerald-300"}`}>{last ? (stale ? `Data lama · ${formatDateTime(last.captured_at)}` : "Live") : "Belum ada data"}</span>
+            <div className="flex gap-2">
+              <span className={`rounded-full px-3 py-1 font-mono text-xs ${stale ? "bg-amber-400/10 text-amber-300" : "bg-emerald-400/10 text-emerald-300"}`}>{last ? (stale ? `Data lama · ${formatDateTime(last.captured_at)}` : "Live") : "Belum ada data"}</span>
+              <span className={`rounded-full px-3 py-1 font-mono text-xs ${live ? "bg-emerald-400/10 text-emerald-300" : "bg-slate-400/10 text-slate-400"}`} title={live ? "Data masuk lewat Supabase Realtime" : `Realtime terputus, cek ulang tiap ${POLL_MS / 1000} dtk`}>{live ? "Realtime" : "Polling"}</span>
+            </div>
           </div>
           {telemetry.length ? <div className="mt-4"><TelemetryChart rows={telemetry} /></div> : <div className="mt-4 grid h-56 place-items-center rounded-xl border border-dashed border-slate-600/70 p-6 text-center text-sm text-slate-400">Belum ada telemetry. Pastikan worker pemantauan berjalan untuk printer ini.</div>}
         </article>

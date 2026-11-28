@@ -86,6 +86,10 @@ const result = MonitoringResultSchema.parse(JSON.parse(geminiText)); // { status
 if (shouldAlert(result)) { /* insert monitoring_events with alert_sent_at, send Telegram (warning only, never cancel) */ }
 ```
 
+Realtime: `telemetry`, `snapshots` and `monitoring_events` are in the `supabase_realtime` publication.
+The monitoring page subscribes per printer (`printer_id=eq.<id>`) and only polls every 10 s while the
+realtime connection is down. Rows reach a user only if RLS lets them read the row.
+
 ## Using `@filamentiq/shared` from Next.js
 
 `next.config`: `transpilePackages: ["@filamentiq/shared"]`, `experimental: { externalDir: true }`;

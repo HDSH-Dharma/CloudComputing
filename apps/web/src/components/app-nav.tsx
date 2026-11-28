@@ -16,6 +16,7 @@ const mainLinks: NavLink[] = [
 const setupLinks: NavLink[] = [
   { href: "/printers", label: "Printers" },
   { href: "/gcode", label: "G-code files" },
+  { href: "/telegram", label: "Telegram" },
 ];
 function NavGroup({ title, links, pathname, onNavigate }: { title: string; links: NavLink[]; pathname: string; onNavigate?: () => void }) {
   return <div><p className="mb-3 px-3 font-mono text-[11px] font-semibold uppercase tracking-[.18em] text-slate-500">{title}</p><nav aria-label={title} className="flex flex-col gap-1">{links.map(({ href, label }) => {

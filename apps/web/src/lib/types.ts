@@ -174,3 +174,6 @@ export type ChatSessionRow = { id: string; title: string | null; updated_at: str
 
 /** ai_chat_messages — `tool_calls` is [{name,args,cached,ok,error?}] on model turns. */
 export type ChatMessageRow = { id: number; role: "user" | "model"; text: string; tool_calls: unknown };
+
+/** profiles — only the Telegram link state; the chat id itself is never rendered. */
+export type TelegramLinkState = { telegram_chat_id: number | null; telegram_linked_at: string | null };

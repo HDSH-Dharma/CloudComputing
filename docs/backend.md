@@ -3,6 +3,14 @@
 Everything a teammate needs to read/write data. Names are exported as constants from
 `@filamentiq/shared` (`TABLES`, `VIEWS`, `RPC`, `BUCKETS`, `EDGE_FUNCTIONS`, `storagePaths`).
 
+## Auth (passwordless email code)
+
+Login and signup use `supabase.auth.signInWithOtp` → 6-digit code by email → `verifyOtp({ type: "email" })`
+(`apps/web/src/components/auth-form.tsx`). The login page never creates accounts (`shouldCreateUser: false`).
+Production sends mail through Purelymail SMTP (`smtp.purelymail.com:465`, sender `hdsh@mav.my.id`), set in
+Dashboard > Authentication > Emails > SMTP Settings. The "Magic Link" and "Confirm signup" templates must both
+contain `{{ .Token }}`: paste `supabase/templates/otp.html`. Local settings live in `supabase/config.toml`.
+
 ## Tables
 
 | Table | Written by | Notes |
